@@ -40,7 +40,7 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "balls game");
 
 	player ball = {
-		.texture = LoadTexture("C:/Users/pavla/Desktop/raylib_test/textures/ball.png"),
+		.texture = LoadTexture("textures/ball.png"),
 		.x = (float)screenWidth / 2 - (float)ball.texture.width / 2,
 	    .y = (float)screenHeight / 2 - (float)ball.texture.height / 2,
 	    .radius = 4.0f,
