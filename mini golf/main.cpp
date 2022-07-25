@@ -7,6 +7,7 @@
 
 #define delta_speed 0.1f
 #define ball_mass 0.05f
+#define num_of_levels 3
 
 typedef struct WALL{
 	Texture2D texture;
@@ -27,6 +28,22 @@ void wall_collision(WALL wall, float ball_x, float ball_y, float& dir){
 			dir = -dir;
 }
 
+void init_level(std::vector<WALL> wall, int level, Texture2D wall_texture){
+	switch(level){
+		case 0:
+			break;
+		case 1:
+			wall.erase(wall.begin(), wall.end());
+			wall.push_back({.texture = wall_texture, .x = 100, .y = 300});
+			break;
+		case 2:
+			wall.erase(wall.begin(), wall.end());
+			wall.push_back({.texture = wall_texture, .x = 30, .y = 100});
+			wall.push_back({.texture = wall_texture, .x = 300, .y = 256});
+			break;
+	}
+}
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -39,15 +56,12 @@ int main(void)
 
     InitWindow(screenWidth, screenHeight, "balls game");
 
-	player ball = {
-		.texture = LoadTexture("textures/ball.png"),
-		.x = (float)screenWidth / 2 - (float)ball.texture.width / 2,
-	    .y = (float)screenHeight / 2 - (float)ball.texture.height / 2,
-	    .radius = 4.0f,
-	    .velocity = 0.0f
-	};
-
 	Texture2D back = LoadTexture("textures/back.png"); // background
+
+	/* Texture2D ball_texture ; */
+	player ball;
+	ball.init(screenHeight, screenWidth);	
+	
 	HOLE hole = {
 		.texture = LoadTexture("textures/hole.png"),
 		.x = (float)screenWidth / 2 - (float)hole.texture.width / 2,
@@ -57,16 +71,9 @@ int main(void)
 	};
 
 	std::vector<WALL> wall;
-	{
-		WALL wall_tmp = {.texture = LoadTexture("textures/brick.png"), .x = 133.0f, .y = 252.0f};
-
-		wall.push_back(wall_tmp);
-
-		wall_tmp.x = 33;
-		wall_tmp.y = 450;
-
-		wall.push_back(wall_tmp);
-	}
+	Texture2D wall_texture = LoadTexture("texture/brick.png");
+	int level = 0;
+	init_level(wall, level, wall_texture);
 
 	float mouse_x = 0, mouse_y = 0;
 	double distance = 0;
@@ -118,15 +125,23 @@ int main(void)
 			if(hole.check_hole_coll(hole, ball, dir_x, dir_y) == true)
 				win = true;
 			
-			if(win)
-				DrawText("YOU WON", screenWidth/2 - 10*7, screenHeight/2, 10, RED);
+			if(level == num_of_levels)
+				DrawText("YOU WON", screenWidth/2 - 40*7, screenHeight/2, 40, RED);
+			else if(win){
+				ball.reset_position(ball, screenWidth, screenHeight);
+				level += 1;
+				init_level(wall, level, wall_texture);
+				win = false;
+				EndDrawing();
+				continue;
+			}
 			else{
 
 				DrawTexture(hole.texture, hole.x, hole.y, RAYWHITE);
 				DrawTexture(ball.texture, ball.x, ball.y, RAYWHITE);
 
 				//debugging
-				DrawText(TextFormat("dir_x = %f\ndir_y = %f", dir_x, dir_y), 30, 30, 20, BLUE);
+				DrawText(TextFormat("dir_x = %f\ndir_y = %f\nball.x = %f\nball.y = %f", dir_x, dir_y, ball.x, ball.y), 30, 30, 20, BLUE);
 
 				for(WALL tmp : wall){
 					DrawTexture(tmp.texture, tmp.x, tmp.y, RAYWHITE);
@@ -170,13 +185,12 @@ int main(void)
 					ball.velocity -= delta_speed;
 					if(ball.velocity < 0)
 						ball.velocity = 0;
-				}
-				else
+				} else
 					player_can_shoot = true;
 				//DrawText(TextFormat("DISTANCE: %lf\nmouse_x = %f\nmouse_y = %f\nball vel = %lf\ndir_x = %lf\ndir_y = %lf\nwid: %f", distance, mouse_x, mouse_y, ball.velocity, dir_x, dir_y, wall[0].x + wall[0].texture.width), 10, 10, 30, BLUE);
-		}
+			}
 
-        EndDrawing();
+		EndDrawing();
         //----------------------------------------------------------------------------------
     }
 
