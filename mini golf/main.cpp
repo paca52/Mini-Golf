@@ -12,23 +12,31 @@
 typedef struct WALL{
 	Texture2D texture;
 	float x, y;
-
 }WALL;
+
+typedef struct ARROW{
+	Texture2D texture;
+	Rectangle sourceRec;
+	Rectangle destRec;
+	Vector2 origin;
+	int rotaion;
+
+}ARROW;
 
 double get_distance(float x1, float y1, float x2, float y2){
 	return double( sqrt( (y2 - y1)*(y2 - y1) + (x2 - x1)*(x2 - x1) ) );
 }
 
 void wall_collision(WALL wall, float ball_x, float ball_y, float& dir){
-		DrawCircle(ball_x, ball_y, 2.0f, RED);
-		
-		if(ball_x >= wall.x && ball_x <= wall.x + wall.texture.width
-				&&
-		   ball_y >= wall.y && ball_y <= wall.y + wall.texture. height)
-			dir = -dir;
+	DrawCircle(ball_x, ball_y, 2.0f, RED);
+	
+	if(ball_x >= wall.x && ball_x <= wall.x + wall.texture.width
+			&&
+	   ball_y >= wall.y && ball_y <= wall.y + wall.texture. height)
+		dir = -dir;
 }
 
-void init_level(std::vector<WALL> wall, int level, Texture2D wall_texture){
+std::vector<WALL> init_level(std::vector<WALL> wall, int level, Texture2D wall_texture){
 	switch(level){
 		case 0:
 			break;
@@ -42,6 +50,7 @@ void init_level(std::vector<WALL> wall, int level, Texture2D wall_texture){
 			wall.push_back({.texture = wall_texture, .x = 300, .y = 256});
 			break;
 	}
+	return wall;
 }
 
 //------------------------------------------------------------------------------------
@@ -58,9 +67,14 @@ int main(void)
 
 	Texture2D back = LoadTexture("textures/back.png"); // background
 
-	/* Texture2D ball_texture ; */
-	player ball;
-	ball.init(screenHeight, screenWidth);	
+	player ball(screenHeight, screenWidth);
+	ARROW arrow= {
+		.texture = LoadTexture("textures/arrow.png"),
+		.sourceRec = { 0, 0, (float)arrow.texture.width, (float)arrow.texture.height },
+		.destRec = { 0, 0, (float)arrow.texture.width, (float)arrow.texture.height },
+		.origin = { (float)arrow.texture.width, (float)arrow.texture.height },
+		.rotaion = 0
+	};
 	
 	HOLE hole = {
 		.texture = LoadTexture("textures/hole.png"),
@@ -71,9 +85,9 @@ int main(void)
 	};
 
 	std::vector<WALL> wall;
-	Texture2D wall_texture = LoadTexture("texture/brick.png");
-	int level = 0;
-	init_level(wall, level, wall_texture);
+	Texture2D wall_texture = LoadTexture("textures/brick.png");
+	int level = 0, num_of_strokes = 0;
+	wall = init_level(wall, level, wall_texture);
 
 	float mouse_x = 0, mouse_y = 0;
 	double distance = 0;
@@ -96,6 +110,7 @@ int main(void)
         // TODO: Update your variables here
         //----------------------------------------------------------------------------------
 
+		arrow.rotaion++;
 		if(player_can_shoot == true && ball.is_mouse_on_the_ball(ball, GetMouseX(), GetMouseY()) == true && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) == true)
 			player_want_to_shoot = true;
 
@@ -113,6 +128,7 @@ int main(void)
 
 			player_can_shoot = false;
 			player_want_to_shoot = false;
+			num_of_strokes += 1;
 
 		}
 
@@ -126,12 +142,13 @@ int main(void)
 				win = true;
 			
 			if(level == num_of_levels)
-				DrawText("YOU WON", screenWidth/2 - 40*7, screenHeight/2, 40, RED);
+				DrawText("YOU WON", screenWidth/2 - 40, screenHeight/2, 40, RED);
 			else if(win){
 				ball.reset_position(ball, screenWidth, screenHeight);
 				level += 1;
-				init_level(wall, level, wall_texture);
+				wall = init_level(wall, level, wall_texture);
 				win = false;
+
 				EndDrawing();
 				continue;
 			}
@@ -140,8 +157,18 @@ int main(void)
 				DrawTexture(hole.texture, hole.x, hole.y, RAYWHITE);
 				DrawTexture(ball.texture, ball.x, ball.y, RAYWHITE);
 
+				//yass girl
+				DrawText(TextFormat("level: %d/3\nNumber of strokes: %d", level, num_of_strokes), 0, 0, 20, WHITE);
+
 				//debugging
-				DrawText(TextFormat("dir_x = %f\ndir_y = %f\nball.x = %f\nball.y = %f", dir_x, dir_y, ball.x, ball.y), 30, 30, 20, BLUE);
+				// DrawText(TextFormat("dir_x = %f\ndir_y = %f\nball.x = %f\nball.y = %f", dir_x, dir_y, ball.x, ball.y), 30, 30, 20, BLUE);
+
+				//rendering da arrow
+				if(IsMouseButtonDown(MOUSE_LEFT_BUTTON) == true){
+					DrawTexture(arrow.texture, 0, 0, RAYWHITE);
+					DrawTexturePro(arrow.texture, arrow.sourceRec, arrow.destRec, arrow.origin, (float)arrow.rotaion, RAYWHITE);
+				}
+
 
 				for(WALL tmp : wall){
 					DrawTexture(tmp.texture, tmp.x, tmp.y, RAYWHITE);
@@ -185,7 +212,8 @@ int main(void)
 					ball.velocity -= delta_speed;
 					if(ball.velocity < 0)
 						ball.velocity = 0;
-				} else
+				}
+				else
 					player_can_shoot = true;
 				//DrawText(TextFormat("DISTANCE: %lf\nmouse_x = %f\nmouse_y = %f\nball vel = %lf\ndir_x = %lf\ndir_y = %lf\nwid: %f", distance, mouse_x, mouse_y, ball.velocity, dir_x, dir_y, wall[0].x + wall[0].texture.width), 10, 10, 30, BLUE);
 			}
